@@ -1,10 +1,9 @@
-﻿namespace AdvancedNoteApp.Views
+﻿namespace AdvancedNoteApp.Views;
+
+public partial class NoteDetailPage : ContentPage
 {
-    public partial class NoteDetailPage : ContentPage
+    public NoteDetailPage()
     {
-        public NoteDetailPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

@@ -1,10 +1,9 @@
-﻿namespace AdvancedNoteApp.Views
+﻿namespace AdvancedNoteApp.Views;
+
+public partial class SettingsPage : ContentPage
 {
-    public partial class SettingsPage : ContentPage
+    public SettingsPage()
     {
-        public SettingsPage()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
