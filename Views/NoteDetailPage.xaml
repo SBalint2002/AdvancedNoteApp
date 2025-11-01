@@ -1,19 +1,56 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AdvancedNoteApp.Views.NoteDetailPage">
+<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:AdvancedNoteApp.ViewModels"
+    x:DataType="viewmodels:NoteDetailViewModel"
+    x:Class="AdvancedNoteApp.Views.NoteDetailPage"
+    BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1C1C1E}"
+    NavigationPage.HasNavigationBar="False">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
+    <Grid RowDefinitions="Auto,*">
 
-            <Label
-                Text="Note Detail Page"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
-            
-        </VerticalStackLayout>
-    </ScrollView>
+        <Grid Padding="15,10" 
+              BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}" 
+              ColumnDefinitions="Auto,*,Auto"
+              HeightRequest="50">
 
+            <Button Text="Vissza"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
+                    Clicked="OnBackTapped"
+                    Grid.Column="0">
+                <Button.Triggers>
+                    <Trigger TargetType="Button" Property="IsPressed" Value="True">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </Button.Triggers>
+            </Button>
+            <Label Grid.Column="1"
+                   Text="Jegyzet"
+                   FontSize="18"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"/>
+        </Grid>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20" Spacing="15">
+                <Entry Placeholder="Cím"
+                       FontSize="24"
+                       FontAttributes="Bold"
+                       Text="{Binding Note.Title}"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                       BackgroundColor="Transparent" />
+
+                <Editor Placeholder="Írd ide a jegyzetet..."
+                        Text="{Binding Note.Content}"
+                        FontSize="16"
+                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                        BackgroundColor="Transparent"
+                        AutoSize="TextChanges"
+                        HeightRequest="500" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

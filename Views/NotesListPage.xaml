@@ -1,19 +1,98 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="AdvancedNoteApp.Views.NotesListPage">
+<ContentPage 
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:AdvancedNoteApp.ViewModels"
+    xmlns:models="clr-namespace:AdvancedNoteApp.Models"
+    x:DataType="viewmodels:NotesListViewModel"
+    x:Class="AdvancedNoteApp.Views.NotesListPage"
+    x:Name="NotesPageRoot"
+    BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1C1C1E}">
 
-    <ScrollView>
-        <VerticalStackLayout
-            Padding="30,0"
-            Spacing="25">
+    <Grid Padding="16" RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*" Padding="0,6" Row="0">
+            <Label Text="Jegyzetek"
+                   FontAttributes="Bold"
+                   FontSize="28"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+        </Grid>
 
-            <Label
-                Text="Notes List Page"
-                Style="{StaticResource Headline}"
-                SemanticProperties.HeadingLevel="Level1" />
+        <CollectionView x:Name="NotesCollectionView"
+                        Grid.Row="1"
+                        ItemsSource="{Binding Notes}"
+                        SelectionMode="Single"
+                        SelectionChangedCommand="{Binding OpenNoteCommand}"
+                        SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference NotesCollectionView}}"
+                        BackgroundColor="Transparent"
+                        Margin="0">
             
-        </VerticalStackLayout>
-    </ScrollView>
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+            </CollectionView.ItemsLayout>
 
+            <CollectionView.EmptyView>
+                <Label Text="Nincsenek jegyzetek még…" 
+                       FontAttributes="Italic"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       TextColor="Gray" />
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="models:Note">
+                    <Border Margin="0"
+                            Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#2C2C2E}"
+                            StrokeShape="RoundRectangle 12"
+                            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}">
+
+                        <Border.Shadow>
+                            <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
+                        </Border.Shadow>
+
+                        <VerticalStackLayout Padding="14,10">
+                            <Label Text="{Binding Title}" 
+                                   FontAttributes="Bold" 
+                                   FontSize="18"
+                                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                            <Label Text="{Binding Content}" 
+                                   FontSize="14"
+                                   LineBreakMode="TailTruncation"
+                                   MaxLines="1"
+                                   TextColor="Gray" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+
+        <Border Grid.RowSpan="2"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="16"
+                Padding="0"
+                StrokeShape="RoundRectangle 28,28,28,28"
+                BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
+                WidthRequest="56"
+                HeightRequest="56"
+                IsVisible="True">
+            <Border.Shadow>
+                <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
+            </Border.Shadow>
+
+            <Button Text="＋"
+                    Command="{Binding AddNewNoteCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontSize="30"
+                    Padding="0"
+                    WidthRequest="56"
+                    HeightRequest="56"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    SemanticProperties.Hint="Create new note"
+                    AutomationId="AddNoteButton"/>
+        </Border>
+    </Grid>
 </ContentPage>

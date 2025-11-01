@@ -1,4 +1,6 @@
-﻿using AdvancedNoteApp.Services;
+﻿using System.Threading.Tasks;
+using AdvancedNoteApp.Repositories;
+using AdvancedNoteApp.Services;
 using AdvancedNoteApp.ViewModels;
 using AdvancedNoteApp.Views;
 using Microsoft.Extensions.Logging;
@@ -18,6 +20,7 @@ namespace AdvancedNoteApp
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+            builder.Services.AddSingleton<NoteRepository>();
             builder.Services.AddSingleton<ILocalDatabase, LocalDatabase>();
             builder.Services.AddSingleton<ISyncService, SyncService>();
             builder.Services.AddTransient<NotesListViewModel>();
@@ -29,8 +32,11 @@ namespace AdvancedNoteApp
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+            var app = builder.Build();
 
-            return builder.Build();
+            Task.Run(async () => await AdvancedNoteApp.Services.DatabaseSeeder.SeedAsync(app.Services)).Wait();
+
+            return app;
         }
     }
 }
