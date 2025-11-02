@@ -1,9 +1,15 @@
-﻿namespace AdvancedNoteApp.Views;
+﻿using AdvancedNoteApp.ViewModels;
+
+namespace AdvancedNoteApp.Views;
 
 public partial class SettingsPage : ContentPage
 {
-    public SettingsPage()
+    private readonly SettingsViewModel viewModel;
+
+    public SettingsPage(SettingsViewModel viewModel)
     {
         InitializeComponent();
+        BindingContext = viewModel;
+        this.viewModel = viewModel;
     }
 }

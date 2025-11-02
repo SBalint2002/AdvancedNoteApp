@@ -38,15 +38,20 @@ public class LocalDatabase : ILocalDatabase
         if (note is null) throw new ArgumentNullException(nameof(note));
 
         note.Synced = false;
-        if (note.Id != 0)
+        note.UpdatedAt = DateTime.UtcNow;
+
+        var exists = await database!
+            .Table<Note>()
+            .Where(n => n.Id == note.Id)
+            .CountAsync();
+
+        if (exists > 0)
         {
-            note.UpdatedAt = DateTime.UtcNow;
             await database!.UpdateAsync(note);
         }
         else
         {
             note.CreatedAt = DateTime.UtcNow;
-            note.UpdatedAt = DateTime.UtcNow;
             await database!.InsertAsync(note);
         }
     }
@@ -56,21 +61,14 @@ public class LocalDatabase : ILocalDatabase
         await Init();
         if (note is null) throw new ArgumentNullException(nameof(note));
 
-        if (note.Id != 0)
+        await database!.RunInTransactionAsync(conn =>
         {
-            await database!.RunInTransactionAsync(conn =>
+            var rows = conn.Update(note);
+            if (rows == 0)
             {
-                var rows = conn.Update(note);
-                if (rows == 0)
-                    conn.Insert(note);
-            });
-        }
-        else
-        {
-            note.CreatedAt = DateTime.UtcNow;
-            note.UpdatedAt = DateTime.UtcNow;
-            await database!.InsertAsync(note);
-        }
+                conn.Insert(note);
+            }
+        });
     }
 
     public async Task DeleteNoteAsync(Note note)

@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using AdvancedNoteApp.Repositories;
+﻿using AdvancedNoteApp.Repositories;
 using AdvancedNoteApp.Services;
 using AdvancedNoteApp.ViewModels;
 using AdvancedNoteApp.Views;
@@ -20,23 +19,26 @@ namespace AdvancedNoteApp
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+            var supabaseClient = new Supabase.Client(Constants.SupabaseUrl, Constants.SupabaseAnonKey);
+            supabaseClient.InitializeAsync().GetAwaiter().GetResult();
+            builder.Services.AddSingleton(supabaseClient);
+
             builder.Services.AddSingleton<NoteRepository>();
             builder.Services.AddSingleton<ILocalDatabase, LocalDatabase>();
             builder.Services.AddSingleton<ISyncService, SyncService>();
+
             builder.Services.AddTransient<NotesListViewModel>();
             builder.Services.AddTransient<NoteDetailViewModel>();
             builder.Services.AddTransient<SettingsViewModel>();
+
             builder.Services.AddTransient<NotesListPage>();
             builder.Services.AddTransient<NoteDetailPage>();
             builder.Services.AddTransient<SettingsPage>();
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
-            var app = builder.Build();
 
-            Task.Run(async () => await AdvancedNoteApp.Services.DatabaseSeeder.SeedAsync(app.Services)).Wait();
-
-            return app;
+            return builder.Build();
         }
     }
 }

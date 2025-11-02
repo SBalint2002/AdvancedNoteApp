@@ -12,7 +12,26 @@
                 Text="Settings Page"
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
-            
+
+            <Grid ColumnSpacing="12" VerticalOptions="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0"
+                        Text="Szinkronizálás"
+                        Command="{Binding SyncCommand}"
+                        HorizontalOptions="Start" />
+
+                <ActivityIndicator Grid.Column="1"
+                                   IsRunning="{Binding isSyncing}"
+                                   IsVisible="{Binding isSyncing}"
+                                   WidthRequest="24"
+                                   HeightRequest="24"
+                                   VerticalOptions="Center" />
+            </Grid>
+
         </VerticalStackLayout>
     </ScrollView>
 
