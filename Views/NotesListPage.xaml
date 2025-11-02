@@ -9,6 +9,11 @@
     x:Name="NotesPageRoot"
     BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1C1C1E}">
 
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="{Binding SelectionToggleText}" Command="{Binding ToggleSelectionModeCommand}" />
+        <ToolbarItem Text="Törlés" Command="{Binding DeleteSelectedCommand}" IsEnabled="{Binding HasSelectedItems}" />
+    </ContentPage.ToolbarItems>
+
     <Grid Padding="16" RowDefinitions="Auto,*">
         <Grid ColumnDefinitions="*" Padding="0,6" Row="0">
             <Label Text="Jegyzetek"
@@ -21,12 +26,10 @@
         <CollectionView x:Name="NotesCollectionView"
                         Grid.Row="1"
                         ItemsSource="{Binding Notes}"
-                        SelectionMode="Single"
-                        SelectionChangedCommand="{Binding OpenNoteCommand}"
-                        SelectionChangedCommandParameter="{Binding SelectedItem, Source={x:Reference NotesCollectionView}}"
+                        SelectionMode="None"
                         BackgroundColor="Transparent"
                         Margin="0">
-            
+
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
             </CollectionView.ItemsLayout>
@@ -46,21 +49,42 @@
                             StrokeShape="RoundRectangle 12"
                             BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2C2C2E}">
 
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                <Setter Property="BackgroundColor" Value="#E8F0FF" />
+                                <Setter Property="Stroke" Value="#007AFF" />
+                            </DataTrigger>
+                        </Border.Triggers>
+
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={x:Reference NotesPageRoot}, Path=BindingContext.TapItemCommand}"
+                                                  CommandParameter="{Binding .}"
+                                                  NumberOfTapsRequired="1" />
+                        </Border.GestureRecognizers>
+
                         <Border.Shadow>
                             <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
                         </Border.Shadow>
 
-                        <VerticalStackLayout Padding="14,10">
-                            <Label Text="{Binding Title}" 
-                                   FontAttributes="Bold" 
-                                   FontSize="18"
-                                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
-                            <Label Text="{Binding Content}" 
-                                   FontSize="14"
-                                   LineBreakMode="TailTruncation"
-                                   MaxLines="1"
-                                   TextColor="Gray" />
-                        </VerticalStackLayout>
+                        <Grid Padding="14,10" ColumnDefinitions="Auto, *" RowDefinitions="Auto">
+                            <CheckBox Grid.Column="0"
+                                      IsVisible="{Binding BindingContext.IsSelectionMode, Source={x:Reference NotesPageRoot}}"
+                                      IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                      VerticalOptions="Center"
+                                      Margin="0,0,8,0"/>
+
+                            <VerticalStackLayout Grid.Column="1" Padding="0">
+                                <Label Text="{Binding Title}" 
+                                       FontAttributes="Bold" 
+                                       FontSize="18"
+                                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                                <Label Text="{Binding Content}" 
+                                       FontSize="14"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="1"
+                                       TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
@@ -70,12 +94,10 @@
         <Border Grid.RowSpan="2"
                 HorizontalOptions="End"
                 VerticalOptions="End"
-                Margin="16"
-                Padding="0"
-                StrokeShape="RoundRectangle 28,28,28,28"
+                StrokeShape="RoundRectangle 30,30,30,30"
                 BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
-                WidthRequest="56"
-                HeightRequest="56"
+                WidthRequest="60"
+                HeightRequest="60"
                 IsVisible="True">
             <Border.Shadow>
                 <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
@@ -86,7 +108,6 @@
                     BackgroundColor="Transparent"
                     TextColor="White"
                     FontSize="30"
-                    Padding="0"
                     WidthRequest="56"
                     HeightRequest="56"
                     HorizontalOptions="Center"

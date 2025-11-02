@@ -1,8 +1,10 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using SQLite;
+using System.ComponentModel;
 
 namespace AdvancedNoteApp.Models
 {
-    public class Note
+    public partial class Note : ObservableObject
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
@@ -13,5 +15,9 @@ namespace AdvancedNoteApp.Models
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public bool Synced { get; set; } = false;
         public bool Deleted { get; set; } = false;
+
+        [property: SQLite.Ignore]
+        [ObservableProperty]
+        private bool isSelected = false;
     }
 }
