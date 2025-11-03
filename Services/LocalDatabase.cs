@@ -37,9 +37,6 @@ public class LocalDatabase : ILocalDatabase
         await Init();
         if (note is null) throw new ArgumentNullException(nameof(note));
 
-        note.Synced = false;
-        note.UpdatedAt = DateTime.UtcNow;
-
         var exists = await database!
             .Table<Note>()
             .Where(n => n.Id == note.Id)
@@ -47,11 +44,31 @@ public class LocalDatabase : ILocalDatabase
 
         if (exists > 0)
         {
+            var current = await database!.Table<Note>()
+                .Where(n => n.Id == note.Id)
+                .FirstOrDefaultAsync();
+
+            if (current is not null &&
+                current.Title == note.Title &&
+                current.Content == note.Content &&
+                current.Synced == note.Synced)
+            {
+                return;
+            }
+
+            note.UpdatedAt = DateTime.UtcNow;
+
+            if (current is not null)
+            {
+                note.CreatedAt = current.CreatedAt;
+            }
+
             await database!.UpdateAsync(note);
         }
         else
         {
             note.CreatedAt = DateTime.UtcNow;
+            note.UpdatedAt = DateTime.UtcNow;
             await database!.InsertAsync(note);
         }
     }

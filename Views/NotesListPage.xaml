@@ -66,7 +66,7 @@
                             <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
                         </Border.Shadow>
 
-                        <Grid Padding="14,10" ColumnDefinitions="Auto, *" RowDefinitions="Auto">
+                        <Grid Padding="14,10" ColumnDefinitions="Auto, *, Auto" RowDefinitions="Auto">
                             <CheckBox Grid.Column="0"
                                       IsVisible="{Binding BindingContext.IsSelectionMode, Source={x:Reference NotesPageRoot}}"
                                       IsChecked="{Binding IsSelected, Mode=TwoWay}"
@@ -83,6 +83,32 @@
                                        LineBreakMode="TailTruncation"
                                        MaxLines="1"
                                        TextColor="Gray" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="2"
+                                                 HorizontalOptions="End"
+                                                 VerticalOptions="Center"
+                                                 Spacing="2"
+                                                 Padding="6,0,6,0"
+                                                 WidthRequest="110">
+                                <Label Text="{Binding UpdatedAt, StringFormat='{}{0:yyyy.MM.dd H:mm}'}"
+                                       FontSize="12"
+                                       TextColor="Gray"
+                                       HorizontalTextAlignment="End"
+                                       LineBreakMode="TailTruncation"
+                                       MaxLines="1" />
+
+                                <Label Text=""
+                                       FontSize="16"
+                                       HorizontalTextAlignment="End"
+                                       AutomationId="SyncStatusLabel">
+                                    <Label.Triggers>
+                                        <DataTrigger TargetType="Label" Binding="{Binding Synced}" Value="True">
+                                            <Setter Property="Text" Value=":)" />
+                                            <Setter Property="TextColor" Value="#28A745" />
+                                        </DataTrigger>
+                                    </Label.Triggers>
+                                </Label>
                             </VerticalStackLayout>
                         </Grid>
                     </Border>
