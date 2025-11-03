@@ -7,6 +7,10 @@ namespace AdvancedNoteApp.Models
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
+
+        [Column("remote_id")]
+        public string? RemoteId { get; set; }
+
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }

@@ -10,13 +10,13 @@ public class RemoteNote : BaseModel
     public string? Id { get; set; }
 
     [Column("local_id")]
-    public int LocalId { get; set; }
+    public int? LocalId { get; set; }
 
     [Column("title")]
-    public string Title { get; set; } = string.Empty;
+    public string? Title { get; set; } = string.Empty;
 
     [Column("content")]
-    public string Content { get; set; } = string.Empty;
+    public string? Content { get; set; } = string.Empty;
 
     [Column("image_url")]
     public string? ImageUrl { get; set; }
