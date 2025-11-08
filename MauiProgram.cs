@@ -34,11 +34,16 @@ namespace AdvancedNoteApp
             builder.Services.AddTransient<NotesListPage>();
             builder.Services.AddTransient<NoteDetailPage>();
             builder.Services.AddTransient<SettingsPage>();
+            
+            builder.Services.AddSingleton<NetworkMonitor>();
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
+            var mauiApp = builder.Build();
 
-            return builder.Build();
+            mauiApp.Services.GetRequiredService<NetworkMonitor>();
+
+            return mauiApp;
         }
     }
 }

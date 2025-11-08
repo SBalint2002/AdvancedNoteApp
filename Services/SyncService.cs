@@ -1,6 +1,8 @@
 ﻿using AdvancedNoteApp.Models;
 using Microsoft.Extensions.Logging;
 using static Supabase.Postgrest.Constants;
+using CommunityToolkit.Mvvm.Messaging;
+using AdvancedNoteApp.Messages;
 
 namespace AdvancedNoteApp.Services;
 
@@ -56,6 +58,8 @@ public class SyncService : ISyncService
             {
                 await DeleteRemoteByLocalIdAsync(d.Id);
                 await localDb.RemoveNoteAsync(d);
+
+                WeakReferenceMessenger.Default.Send(new NoteSavedMessage(d));
             }
             catch (Exception ex)
             {
@@ -143,7 +147,10 @@ public class SyncService : ISyncService
             }
 
             var createdLocal = CreateLocalFromRemote(r);
-            await localDb.SaveNoteAsync(createdLocal);
+            await localDb.SaveNoteAsync(createdLocal, markAsSynced: true);
+
+            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(createdLocal));
+
             if (!string.IsNullOrEmpty(r.Id))
             {
                 await UpdateRemoteLocalIdAsync(r.Id!, createdLocal.Id);
@@ -163,14 +170,18 @@ public class SyncService : ISyncService
                 mapped.Deleted = false;
                 mapped.Id = existingLocal.Id;
                 mapped.RemoteId = existingLocal.RemoteId;
-                await localDb.SaveNoteAsync(mapped);
+                await localDb.SaveNoteAsync(mapped, markAsSynced: true);
+
+                WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mapped));
             }
 
             return;
         }
 
         var mappedInsert = CreateLocalFromRemote(r);
-        await localDb.SaveNoteAsync(mappedInsert);
+        await localDb.SaveNoteAsync(mappedInsert, markAsSynced: true);
+
+        WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mappedInsert));
 
         if (!string.IsNullOrEmpty(r.Id))
         {
@@ -201,7 +212,10 @@ public class SyncService : ISyncService
             mapped.Deleted = false;
             mapped.Id = local.Id;
             mapped.RemoteId = r.Id;
-            await localDb.SaveNoteAsync(mapped);
+            await localDb.SaveNoteAsync(mapped, markAsSynced: true);
+
+            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mapped));
+
             return;
         }
 
@@ -217,7 +231,9 @@ public class SyncService : ISyncService
             }
 
             local.Synced = true;
-            await localDb.SaveNoteAsync(local);
+            await localDb.SaveNoteAsync(local, markAsSynced: true);
+
+            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(local));
         }
     }
 
@@ -299,6 +315,8 @@ public class SyncService : ISyncService
         }
 
         note.Synced = true;
-        await localDb.SaveNoteAsync(note);
+        await localDb.SaveNoteAsync(note, markAsSynced: true);
+
+        WeakReferenceMessenger.Default.Send(new NoteSavedMessage(note));
     }
 }

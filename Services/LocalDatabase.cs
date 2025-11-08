@@ -32,7 +32,7 @@ public class LocalDatabase : ILocalDatabase
             .ToListAsync();
     }
 
-    public async Task SaveNoteAsync(Note note)
+    public async Task SaveNoteAsync(Note note, bool markAsSynced = false)
     {
         await Init();
         if (note is null) throw new ArgumentNullException(nameof(note));
@@ -48,44 +48,116 @@ public class LocalDatabase : ILocalDatabase
                 .Where(n => n.Id == note.Id)
                 .FirstOrDefaultAsync();
 
-            if (current is not null &&
-                current.Title == note.Title &&
-                current.Content == note.Content &&
-                current.Synced == note.Synced)
-            {
-                return;
-            }
-
-            note.UpdatedAt = DateTime.UtcNow;
-
             if (current is not null)
             {
+                bool contentEqual = current.Title == note.Title
+                                    && current.Content == note.Content
+                                    && current.ImageUrl == note.ImageUrl;
+
+                if (contentEqual && !markAsSynced)
+                {
+                    return;
+                }
+
+                if (contentEqual && markAsSynced)
+                {
+                    if (current.Synced) return;
+                    note.Synced = true;
+                    note.CreatedAt = current.CreatedAt;
+                    note.UpdatedAt = current.UpdatedAt;
+                    await database.UpdateAsync(note);
+                    return;
+                }
+
+                if (!markAsSynced)
+                {
+                    note.Synced = false;
+                    note.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    note.Synced = true;
+                }
+
                 note.CreatedAt = current.CreatedAt;
+                await database.UpdateAsync(note);
             }
 
-            await database!.UpdateAsync(note);
+            return;
+        }
+
+        if (!markAsSynced)
+        {
+            note.Synced = false;
+            note.CreatedAt = DateTime.UtcNow;
+            note.UpdatedAt = DateTime.UtcNow;
         }
         else
         {
-            note.CreatedAt = DateTime.UtcNow;
-            note.UpdatedAt = DateTime.UtcNow;
-            await database!.InsertAsync(note);
+            note.Synced = true;
+            if (note.CreatedAt == default) note.CreatedAt = DateTime.UtcNow;
+            if (note.UpdatedAt == default) note.UpdatedAt = DateTime.UtcNow;
         }
+
+        await database!.InsertAsync(note);
     }
 
-    public async Task UpsertNoteAsync(Note note)
+    public async Task UpsertNoteAsync(Note note, bool markAsSynced = false)
     {
         await Init();
         if (note is null) throw new ArgumentNullException(nameof(note));
 
-        await database!.RunInTransactionAsync(conn =>
+        var now = DateTime.UtcNow;
+
+        if (note.Id != 0)
         {
-            var rows = conn.Update(note);
-            if (rows == 0)
+            var existing = await database!.Table<Note>()
+                                       .Where(n => n.Id == note.Id)
+                                       .FirstOrDefaultAsync();
+
+            if (existing is not null)
             {
-                conn.Insert(note);
+                bool contentEqual = existing.Title == note.Title
+                                    && existing.Content == note.Content
+                                    && existing.ImageUrl == note.ImageUrl;
+
+                if (contentEqual && !markAsSynced)
+                {
+                    return;
+                }
+
+                note.CreatedAt = existing.CreatedAt;
+
+                if (!markAsSynced)
+                {
+                    note.Synced = false;
+                    note.UpdatedAt = now;
+                }
+                else
+                {
+                    note.Synced = true;
+                    if (note.UpdatedAt == default) note.UpdatedAt = existing.UpdatedAt;
+                }
+
+                await database.UpdateAsync(note);
+                return;
             }
-        });
+        }
+
+        if (!markAsSynced)
+        {
+            note.Synced = false;
+            note.UpdatedAt = now;
+            note.CreatedAt = now;
+        }
+        else
+        {
+            note.Synced = true;
+            if (note.CreatedAt == default) note.CreatedAt = now;
+            if (note.UpdatedAt == default) note.UpdatedAt = now;
+        }
+
+        await database!.InsertAsync(note);
     }
 
     public async Task DeleteNoteAsync(Note note)
