@@ -1,8 +1,6 @@
 ﻿using AdvancedNoteApp.Models;
 using Microsoft.Extensions.Logging;
 using static Supabase.Postgrest.Constants;
-using CommunityToolkit.Mvvm.Messaging;
-using AdvancedNoteApp.Messages;
 
 namespace AdvancedNoteApp.Services;
 
@@ -32,9 +30,12 @@ public class SyncService : ISyncService
 
         try
         {
-            await SyncDeletedAsync();
-            await SyncRemoteToLocalAsync();
-            await SyncLocalToRemoteAsync();
+            var allLocal = await localDb.GetAllNotesAsync();
+            var allRemote = await FetchAllRemoteNotesAsync();
+
+            await PushDeletedAsync(allLocal, allRemote);
+            await PullRemoteAsync(allLocal, allRemote);
+            await PushLocalAsync(allLocal, allRemote);
         }
         catch (Exception ex)
         {
@@ -46,73 +47,91 @@ public class SyncService : ISyncService
         }
     }
 
-    private async Task SyncDeletedAsync()
+    private async Task PushDeletedAsync(List<Note> local, List<RemoteNote> remote)
     {
-        var localNotes = await localDb.GetAllNotesAsync();
-        var deleted = localNotes.Where(n => n.Deleted).ToList();
-        if (!deleted.Any()) return;
-
+        var deleted = local.Where(n => n.Deleted).ToList();
         foreach (var d in deleted)
         {
-            try
+            if (string.IsNullOrEmpty(d.RemoteId))
             {
-                await DeleteRemoteByLocalIdAsync(d.Id);
                 await localDb.RemoveNoteAsync(d);
+                continue;
+            }
 
-                WeakReferenceMessenger.Default.Send(new NoteSavedMessage(d));
+            try
+            {
+                await supabase.From<RemoteNote>()
+                    .Filter("id", Operator.Equals, d.RemoteId)
+                    .Delete();
+
+                await localDb.RemoveNoteAsync(d);
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Error deleting remote note {Id}", d.Id);
+                logger.LogWarning(ex, "Delete failed for {Id}", d.Id);
             }
         }
     }
 
-    private async Task SyncRemoteToLocalAsync()
+    private async Task PullRemoteAsync(List<Note> local, List<RemoteNote> remote)
     {
-        var remoteList = await FetchAllRemoteNotesAsync();
-        if (!remoteList.Any()) return;
+        var localByRemoteId = local.Where(n => !string.IsNullOrEmpty(n.RemoteId))
+                                   .ToDictionary(n => n.RemoteId!, n => n);
 
-        var localAll = await localDb.GetAllNotesAsync();
-        var localById = localAll.ToDictionary(n => n.Id);
-        var localByRemoteId = localAll.Where(n => n.RemoteId is not null)
-                                      .ToDictionary(n => n.RemoteId!, n => n);
+        foreach (var r in remote)
+        {
+            if (localByRemoteId.TryGetValue(r.Id, out var localNote))
+            {
+                if (r.UpdatedAt > localNote.UpdatedAt)
+                {
+                    var updated = NoteMapper.FromRemote(r);
+                    updated.Id = localNote.Id;
+                    updated.RemoteId = r.Id;
+                    await localDb.UpdateNoteAsync(updated, synced: true);
+                }
+            }
+            else
+            {
+                var newNote = NoteMapper.FromRemote(r);
+                newNote.RemoteId = r.Id;
+                await localDb.InsertNoteAsync(newNote);
+                await localDb.UpdateNoteAsync(newNote, synced: true);
+            }
+        }
+    }
 
-        foreach (var r in remoteList)
+    private async Task PushLocalAsync(List<Note> local, List<RemoteNote> remote)
+    {
+        var remoteById = remote.ToDictionary(r => r.Id);
+
+        foreach (var note in local.Where(n => !n.Deleted && !n.Synced))
         {
             try
             {
-                await MergeRemoteAsync(r, localById, localByRemoteId);
+                if (!string.IsNullOrEmpty(note.RemoteId) && remoteById.ContainsKey(note.RemoteId))
+                {
+                    var remoteUpdate = NoteMapper.ToRemote(note);
+                    await supabase.From<RemoteNote>()
+                        .Filter("id", Operator.Equals, note.RemoteId)
+                        .Update(remoteUpdate);
+                }
+                else
+                {
+                    var insertResp = await supabase.From<RemoteNote>().Insert(NoteMapper.ToRemote(note));
+                    var created = insertResp.Models?.Cast<RemoteNote>().FirstOrDefault();
+                    if (created is not null)
+                        note.RemoteId = created.Id;
+                }
+
+                await localDb.UpdateNoteAsync(note, synced: true);
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Error merging remote note {RemoteId}", r.Id);
+                logger.LogWarning(ex, "Upload failed for {Id}", note.Id);
             }
         }
     }
 
-    private async Task SyncLocalToRemoteAsync()
-    {
-        var remoteList = await FetchAllRemoteNotesAsync();
-        var remoteByLocal = remoteList.Where(r => r.LocalId.HasValue)
-                                      .ToDictionary(r => r.LocalId!.Value, r => r);
-
-        var localNotes = await localDb.GetAllNotesAsync();
-        var toUpload = localNotes.Where(n => !n.Synced && !n.Deleted).ToList();
-        if (!toUpload.Any()) return;
-
-        foreach (var note in toUpload)
-        {
-            try
-            {
-                await UploadSingleLocalAsync(note, remoteByLocal);
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Upload error for local note {Id}", note.Id);
-            }
-        }
-    }
 
     private async Task<List<RemoteNote>> FetchAllRemoteNotesAsync()
     {
@@ -126,197 +145,5 @@ public class SyncService : ISyncService
             logger.LogWarning(ex, "Failed to fetch remote notes");
             return new List<RemoteNote>();
         }
-    }
-
-    private async Task DeleteRemoteByLocalIdAsync(int localId)
-    {
-        await supabase
-            .From<RemoteNote>()
-            .Filter("local_id", Operator.Equals, localId)
-            .Delete();
-    }
-
-    private async Task MergeRemoteAsync(RemoteNote r, Dictionary<int, Note> localById, Dictionary<string, Note> localByRemoteId)
-    {
-        if (r.LocalId.HasValue)
-        {
-            if (localById.TryGetValue(r.LocalId.Value, out var local))
-            {
-                await SyncLocalAndRemoteAsync(local, r);
-                return;
-            }
-
-            var createdLocal = CreateLocalFromRemote(r);
-            await localDb.SaveNoteAsync(createdLocal, markAsSynced: true);
-
-            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(createdLocal));
-
-            if (!string.IsNullOrEmpty(r.Id))
-            {
-                await UpdateRemoteLocalIdAsync(r.Id!, createdLocal.Id);
-            }
-
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(r.Id) && localByRemoteId.TryGetValue(r.Id!, out var existingLocal))
-        {
-            await UpdateRemoteLocalIdAsync(r.Id!, existingLocal.Id);
-
-            if (r.UpdatedAt > existingLocal.UpdatedAt)
-            {
-                var mapped = NoteMapper.FromRemote(r);
-                mapped.Synced = true;
-                mapped.Deleted = false;
-                mapped.Id = existingLocal.Id;
-                mapped.RemoteId = existingLocal.RemoteId;
-                await localDb.SaveNoteAsync(mapped, markAsSynced: true);
-
-                WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mapped));
-            }
-
-            return;
-        }
-
-        var mappedInsert = CreateLocalFromRemote(r);
-        await localDb.SaveNoteAsync(mappedInsert, markAsSynced: true);
-
-        WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mappedInsert));
-
-        if (!string.IsNullOrEmpty(r.Id))
-        {
-            await UpdateRemoteLocalIdAsync(r.Id!, mappedInsert.Id);
-        }
-    }
-
-    private Note CreateLocalFromRemote(RemoteNote r)
-    {
-        var mapped = NoteMapper.FromRemote(r);
-        mapped.Synced = true;
-        mapped.Deleted = false;
-        mapped.RemoteId = r.Id;
-        return mapped;
-    }
-
-    private async Task SyncLocalAndRemoteAsync(Note local, RemoteNote r)
-    {
-        if (!string.IsNullOrEmpty(r.Id) && local.RemoteId != r.Id)
-        {
-            local.RemoteId = r.Id;
-        }
-
-        if (r.UpdatedAt > local.UpdatedAt)
-        {
-            var mapped = NoteMapper.FromRemote(r);
-            mapped.Synced = true;
-            mapped.Deleted = false;
-            mapped.Id = local.Id;
-            mapped.RemoteId = r.Id;
-            await localDb.SaveNoteAsync(mapped, markAsSynced: true);
-
-            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(mapped));
-
-            return;
-        }
-
-        if (local.UpdatedAt > r.UpdatedAt)
-        {
-            var remoteUpdate = NoteMapper.ToRemote(local);
-            remoteUpdate.Id = r.Id;
-            remoteUpdate.LocalId = local.Id;
-
-            if (!string.IsNullOrEmpty(r.Id))
-            {
-                await UpdateRemoteByIdAsync(r.Id!, remoteUpdate);
-            }
-
-            local.Synced = true;
-            await localDb.SaveNoteAsync(local, markAsSynced: true);
-
-            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(local));
-        }
-    }
-
-    private async Task UpdateRemoteLocalIdAsync(string remoteId, int localId)
-    {
-        try
-        {
-            await supabase
-                .From<RemoteNote>()
-                .Filter("id", Operator.Equals, remoteId)
-                .Update(new RemoteNote { LocalId = localId });
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to update remote LocalId for remote {RemoteId}", remoteId);
-        }
-    }
-
-    private async Task UpdateRemoteByIdAsync(string remoteId, RemoteNote remote)
-    {
-        try
-        {
-            await supabase
-                .From<RemoteNote>()
-                .Filter("id", Operator.Equals, remoteId)
-                .Update(remote);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to update remote {RemoteId}", remoteId);
-        }
-    }
-
-    private async Task UploadSingleLocalAsync(Note note, Dictionary<int, RemoteNote> remoteByLocal)
-    {
-        var remote = NoteMapper.ToRemote(note);
-        remote.LocalId = note.Id;
-
-        if (!string.IsNullOrEmpty(note.RemoteId))
-        {
-            remote.Id = note.RemoteId;
-            await UpdateRemoteByIdAsync(remote.Id!, remote);
-        }
-        else if (remoteByLocal.TryGetValue(note.Id, out var existing))
-        {
-            remote.Id = existing.Id;
-            if (!string.IsNullOrEmpty(existing.Id))
-            {
-                await UpdateRemoteByIdAsync(existing.Id!, remote);
-                if (string.IsNullOrEmpty(note.RemoteId))
-                {
-                    note.RemoteId = existing.Id;
-                }
-            }
-        }
-        else
-        {
-            try
-            {
-                var insertResp = await supabase
-                    .From<RemoteNote>()
-                    .Insert(remote);
-
-                var created = insertResp.Models?.Cast<RemoteNote>().FirstOrDefault();
-                if (created is not null)
-                {
-                    note.RemoteId = created.Id;
-
-                    if (!created.LocalId.HasValue && !string.IsNullOrEmpty(created.Id))
-                    {
-                        await UpdateRemoteLocalIdAsync(created.Id!, note.Id);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to insert remote for local note {Id}", note.Id);
-            }
-        }
-
-        note.Synced = true;
-        await localDb.SaveNoteAsync(note, markAsSynced: true);
-
-        WeakReferenceMessenger.Default.Send(new NoteSavedMessage(note));
     }
 }

@@ -15,7 +15,20 @@ public class NoteRepository
     }
 
     public Task<List<Note>> GetNotesAsync() => localDb.GetNotesAsync();
-    public Task SaveNoteAsync(Note note) => localDb.SaveNoteAsync(note);
-    public Task DeleteNoteAsync(Note note) => localDb.DeleteNoteAsync(note);
+
+    public async Task SaveNoteAsync(Note note)
+    {
+        if (note.Id == 0)
+        {
+            await localDb.InsertNoteAsync(note);
+        }
+        else
+        {
+            await localDb.UpdateNoteAsync(note, false);
+        }
+    }
+
+    public Task DeleteNoteAsync(Note note) => localDb.MarkDeletedAsync(note);
+
     public Task SyncNotesAsync() => syncService.SyncAllNotesAsync();
 }

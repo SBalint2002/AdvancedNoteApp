@@ -9,9 +9,6 @@ public class RemoteNote : BaseModel
     [PrimaryKey("id", false)]
     public string? Id { get; set; }
 
-    [Column("local_id")]
-    public int? LocalId { get; set; }
-
     [Column("title")]
     public string? Title { get; set; } = string.Empty;
 

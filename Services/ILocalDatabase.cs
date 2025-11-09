@@ -6,9 +6,9 @@ namespace AdvancedNoteApp.Services
     {
         Task<List<Note>> GetNotesAsync();
         Task<List<Note>> GetAllNotesAsync();
-        Task SaveNoteAsync(Note note, bool markAsSynced = false);
-        Task UpsertNoteAsync(Note note, bool markAsSynced = true);
-        Task DeleteNoteAsync(Note note);
+        Task InsertNoteAsync(Note note);
+        Task UpdateNoteAsync(Note note, bool synced);
+        Task MarkDeletedAsync(Note note);
         Task RemoveNoteAsync(Note note);
     }
 }
