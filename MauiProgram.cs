@@ -36,6 +36,7 @@ namespace AdvancedNoteApp
             builder.Services.AddTransient<SettingsPage>();
             
             builder.Services.AddSingleton<NetworkMonitor>();
+            builder.Services.AddSingleton<MediaService>();
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
