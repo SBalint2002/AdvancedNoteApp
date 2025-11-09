@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.Messaging;
 using AdvancedNoteApp.Messages;
 using AdvancedNoteApp.Services;
 using System.ComponentModel;
-using System.Threading;
 
 namespace AdvancedNoteApp.ViewModels;
 

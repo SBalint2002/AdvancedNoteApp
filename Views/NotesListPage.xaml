@@ -104,7 +104,7 @@
                                        AutomationId="SyncStatusLabel">
                                     <Label.Triggers>
                                         <DataTrigger TargetType="Label" Binding="{Binding Synced}" Value="True">
-                                            <Setter Property="Text" Value=":)" />
+                                            <Setter Property="Text" Value="✔" />
                                             <Setter Property="TextColor" Value="#28A745" />
                                         </DataTrigger>
                                     </Label.Triggers>
@@ -120,22 +120,22 @@
         <Border Grid.RowSpan="2"
                 HorizontalOptions="End"
                 VerticalOptions="End"
-                StrokeShape="RoundRectangle 30,30,30,30"
+                StrokeShape="RoundRectangle 30"
                 BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
-                WidthRequest="60"
-                HeightRequest="60"
+                WidthRequest="64"
+                HeightRequest="64"
+                Padding="0"
+                Margin="0,0,8,8"
+                Shadow="0,2,6,#33000000"
                 IsVisible="True">
-            <Border.Shadow>
-                <Shadow Brush="#33000000" Offset="0,2" Radius="6" />
-            </Border.Shadow>
 
             <Button Text="＋"
                     Command="{Binding AddNewNoteCommand}"
                     BackgroundColor="Transparent"
                     TextColor="White"
                     FontSize="30"
-                    WidthRequest="56"
-                    HeightRequest="56"
+                    WidthRequest="64"
+                    HeightRequest="64"
                     HorizontalOptions="Center"
                     VerticalOptions="Center"
                     SemanticProperties.Hint="Create new note"

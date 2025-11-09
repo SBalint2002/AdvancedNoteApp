@@ -13,7 +13,10 @@ namespace AdvancedNoteApp.Models
 
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
-        public string? ImageUrl { get; set; }
+
+        [ObservableProperty]
+        private string? imageUrl;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
         public bool Synced { get; set; } = false;

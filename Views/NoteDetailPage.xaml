@@ -10,45 +10,36 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
-        <Grid Padding="15,10" 
-              BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}" 
+        <Grid Grid.Row="0"
+              Padding="12,8"
+              BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}"
               ColumnDefinitions="Auto,*,Auto"
               HeightRequest="56">
 
-            <Button Text="Vissza"
-                    BackgroundColor="Transparent"
-                    TextColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
-                    Clicked="OnBackTapped"
-                    Grid.Column="0"
-                    VerticalOptions="Center"
-                    Padding="12,0"
-                    HeightRequest="36">
-                <Button.Triggers>
-                    <Trigger TargetType="Button" Property="IsPressed" Value="True">
-                        <Setter Property="Opacity" Value="0.4"/>
-                    </Trigger>
-                </Button.Triggers>
-            </Button>
-            <Label Grid.Column="1"
-                   Text="Jegyzet"
-                   FontSize="18"
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"/>
+            <Label Text="Vissza"
+                   FontSize="16"
+                   VerticalOptions="Center"
+                   Padding="6,4">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackTapped"/>
+                </Label.GestureRecognizers>
+            </Label>
         </Grid>
 
-        <ScrollView Grid.Row="1"
-                    VerticalOptions="Fill"
-                    BackgroundColor="Transparent"
-                    Margin="0"
-                    Padding="0">
-            <VerticalStackLayout Padding="20" Spacing="15" VerticalOptions="Start">
+        <ScrollView Grid.Row="1" VerticalOptions="FillAndExpand">
+            <VerticalStackLayout Padding="20" Spacing="16">
                 <Entry Placeholder="Cím"
-                       FontSize="24"
+                       FontSize="26"
                        FontAttributes="Bold"
                        Text="{Binding Note.Title}"
                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                       BackgroundColor="Transparent" />
+                       BackgroundColor="Transparent"
+                       PlaceholderColor="{AppThemeBinding Light=#A0A0A0, Dark=#888}" />
+
+                <Image Source="{Binding Note.ImageUrl}"
+                       Aspect="AspectFill"
+                       HeightRequest="240"
+                       IsVisible="{Binding HasImage}" />
 
                 <Editor Placeholder="Írd ide a jegyzetet..."
                         Text="{Binding Note.Content}"
@@ -56,29 +47,56 @@
                         TextColor="{AppThemeBinding Light=Black, Dark=White}"
                         BackgroundColor="Transparent"
                         AutoSize="TextChanges"
-                        HeightRequest="120" />
-
-                <Image Source="{Binding Note.ImageUrl}"
-                       Aspect="AspectFill"
-                       HeightRequest="240"
-                       IsVisible="{Binding HasImage}" />
+                        VerticalOptions="FillAndExpand" />
             </VerticalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="2" Padding="16" BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}" ColumnDefinitions="*,*">
-            <Button Text="Kép készítése"
-                    Command="{Binding CaptureImageCommand}"
-                    BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
-                    TextColor="White"
-                    Grid.Column="0"
-                    Margin="0,0,8,0" />
 
-            <Button Text="Kép törlése"
+        <Border Grid.RowSpan="3"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                WidthRequest="64"
+                HeightRequest="64"
+                StrokeShape="RoundRectangle 32"
+                BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
+                Margin="0,0,20,20"
+                Shadow="0,3,8,#55000000"
+                ZIndex="10">
+            <Button Text="📷"
+                Command="{Binding CaptureImageCommand}"
+                BackgroundColor="Transparent"
+                TextColor="White"
+                FontSize="28"
+                WidthRequest="64"
+                HeightRequest="64"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                CornerRadius="32" />
+        </Border>
+
+        <Border Grid.RowSpan="3"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                WidthRequest="56"
+                HeightRequest="56"
+                StrokeShape="RoundRectangle 28"
+                BackgroundColor="{AppThemeBinding Light=#FF3B30, Dark=#FF453A}"
+                Margin="0,0,20,96"
+                Shadow="0,3,8,#55000000"
+                IsVisible="{Binding HasImage}"
+                ZIndex="10">
+            <Button Text="🗑"
                     Command="{Binding RemoveImageCommand}"
-                    BackgroundColor="{AppThemeBinding Light=#FF3B30, Dark=#FF453A}"
+                    BackgroundColor="Transparent"
                     TextColor="White"
-                    Grid.Column="1"
-                    IsVisible="{Binding HasImage}" />
-        </Grid>
+                    FontSize="22"
+                    WidthRequest="56"
+                    HeightRequest="56"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    CornerRadius="28" />
+        </Border>
+
+
     </Grid>
 </ContentPage>

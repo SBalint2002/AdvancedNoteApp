@@ -14,8 +14,18 @@ public class MediaService
     {
         try
         {
+            var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
+            if (status != PermissionStatus.Granted)
+                status = await Permissions.RequestAsync<Permissions.Camera>();
+
+            if (status != PermissionStatus.Granted)
+            {
+                await Application.Current.MainPage.DisplayAlert("Hiba", "A kamera használatához engedély szükséges.", "OK");
+                return null;
+            }
+
             var result = await MediaPicker.Default.CapturePhotoAsync();
-            if (result is null)
+            if (result == null)
                 return null;
 
             await using var sourceStream = await result.OpenReadAsync();
