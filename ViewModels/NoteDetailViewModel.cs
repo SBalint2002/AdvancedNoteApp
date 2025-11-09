@@ -5,6 +5,8 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using AdvancedNoteApp.Messages;
 using AdvancedNoteApp.Services;
+using System.ComponentModel;
+using System.Threading;
 
 namespace AdvancedNoteApp.ViewModels;
 
@@ -13,9 +15,14 @@ public partial class NoteDetailViewModel : ObservableObject
 {
     private readonly NoteRepository noteRepository;
     private readonly MediaService mediaService;
+    private readonly SemaphoreSlim saveLock = new(1, 1);
+    private Note? previousNote;
 
     [ObservableProperty]
     private Note note = new Note();
+
+    [ObservableProperty]
+    private bool hasImage = false;
 
     public NoteDetailViewModel(NoteRepository noteRepository, MediaService mediaService)
     {
@@ -26,6 +33,34 @@ public partial class NoteDetailViewModel : ObservableObject
         {
             Note = m.Value;
         });
+
+        UpdateHasImage();
+    }
+
+    partial void OnNoteChanged(Note value)
+    {
+        if (previousNote is not null)
+            previousNote.PropertyChanged -= Note_PropertyChanged;
+
+        previousNote = value;
+
+        if (previousNote is not null)
+            previousNote.PropertyChanged += Note_PropertyChanged;
+
+        UpdateHasImage();
+    }
+
+    private void Note_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e?.PropertyName == nameof(Note.ImageUrl))
+        {
+            UpdateHasImage();
+        }
+    }
+
+    private void UpdateHasImage()
+    {
+        HasImage = !string.IsNullOrEmpty(Note?.ImageUrl);
     }
 
     [RelayCommand]
@@ -33,18 +68,35 @@ public partial class NoteDetailViewModel : ObservableObject
     {
         if (Note == null) return;
 
-        await noteRepository.SaveNoteAsync(Note);
-        WeakReferenceMessenger.Default.Send(new NoteSavedMessage(Note));
+        await saveLock.WaitAsync();
+        try
+        {
+            await noteRepository.SaveNoteAsync(Note);
+            WeakReferenceMessenger.Default.Send(new NoteSavedMessage(Note));
+        }
+        finally
+        {
+            saveLock.Release();
+        }
     }
 
     [RelayCommand]
     public async Task CaptureImageAsync()
     {
-        var path = await mediaService.CapturePhotoAsync();
-        if (!string.IsNullOrEmpty(path))
+        try
         {
+            var path = await mediaService.CapturePhotoAsync();
+            if (string.IsNullOrEmpty(path))
+                return;
+
             Note.ImageUrl = path;
+            UpdateHasImage();
+
             await SaveNoteAsync();
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlert("Hiba", "Kép készítése nem sikerült: " + ex.Message, "OK");
         }
     }
 
@@ -53,6 +105,7 @@ public partial class NoteDetailViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(Note?.ImageUrl)) return;
         Note.ImageUrl = null;
+        UpdateHasImage();
         await SaveNoteAsync();
     }
 }

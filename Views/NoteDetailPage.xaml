@@ -8,18 +8,21 @@
     BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1C1C1E}"
     NavigationPage.HasNavigationBar="False">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto">
 
         <Grid Padding="15,10" 
               BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}" 
               ColumnDefinitions="Auto,*,Auto"
-              HeightRequest="50">
+              HeightRequest="56">
 
             <Button Text="Vissza"
                     BackgroundColor="Transparent"
                     TextColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
                     Clicked="OnBackTapped"
-                    Grid.Column="0">
+                    Grid.Column="0"
+                    VerticalOptions="Center"
+                    Padding="12,0"
+                    HeightRequest="36">
                 <Button.Triggers>
                     <Trigger TargetType="Button" Property="IsPressed" Value="True">
                         <Setter Property="Opacity" Value="0.4"/>
@@ -34,8 +37,12 @@
                    VerticalOptions="Center"/>
         </Grid>
 
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Padding="20" Spacing="15">
+        <ScrollView Grid.Row="1"
+                    VerticalOptions="Fill"
+                    BackgroundColor="Transparent"
+                    Margin="0"
+                    Padding="0">
+            <VerticalStackLayout Padding="20" Spacing="15" VerticalOptions="Start">
                 <Entry Placeholder="Cím"
                        FontSize="24"
                        FontAttributes="Bold"
@@ -49,8 +56,29 @@
                         TextColor="{AppThemeBinding Light=Black, Dark=White}"
                         BackgroundColor="Transparent"
                         AutoSize="TextChanges"
-                        HeightRequest="500" />
+                        HeightRequest="120" />
+
+                <Image Source="{Binding Note.ImageUrl}"
+                       Aspect="AspectFill"
+                       HeightRequest="240"
+                       IsVisible="{Binding HasImage}" />
             </VerticalStackLayout>
         </ScrollView>
+
+        <Grid Grid.Row="2" Padding="16" BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2E}" ColumnDefinitions="*,*">
+            <Button Text="Kép készítése"
+                    Command="{Binding CaptureImageCommand}"
+                    BackgroundColor="{AppThemeBinding Light=#007AFF, Dark=#0A84FF}"
+                    TextColor="White"
+                    Grid.Column="0"
+                    Margin="0,0,8,0" />
+
+            <Button Text="Kép törlése"
+                    Command="{Binding RemoveImageCommand}"
+                    BackgroundColor="{AppThemeBinding Light=#FF3B30, Dark=#FF453A}"
+                    TextColor="White"
+                    Grid.Column="1"
+                    IsVisible="{Binding HasImage}" />
+        </Grid>
     </Grid>
 </ContentPage>
