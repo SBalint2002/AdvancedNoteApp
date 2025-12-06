@@ -6,7 +6,12 @@
     x:DataType="viewmodels:NoteDetailViewModel"
     x:Class="AdvancedNoteApp.Views.NoteDetailPage"
     BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#1C1C1E}"
-    NavigationPage.HasNavigationBar="False">
+    NavigationPage.HasNavigationBar="False"
+    Shell.NavBarIsVisible="False">
+
+    <Shell.BackButtonBehavior>
+        <BackButtonBehavior IsVisible="False" />
+    </Shell.BackButtonBehavior>
 
     <Grid RowDefinitions="Auto,*,Auto">
 
